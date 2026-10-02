@@ -1,6 +1,7 @@
 const header = document.querySelector("[data-header]");
 const navToggle = document.querySelector(".nav-toggle");
 const year = document.querySelector("[data-year]");
+const contactForm = document.querySelector("[data-contact-form]");
 
 const services = {
   ai: {
@@ -265,5 +266,63 @@ function activateFromHash() {
   }
 }
 
+
+if (contactForm) {
+  const status = contactForm.querySelector("[data-form-status]");
+  const submitButton = contactForm.querySelector("button[type='submit']");
+
+  contactForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!contactForm.reportValidity()) return;
+
+    const formData = new FormData(contactForm);
+    const fallbackEmail = () => {
+      const name = formData.get("name") || "";
+      const email = formData.get("email") || "";
+      const service = formData.get("service") || "";
+      const message = formData.get("message") || "";
+      const subject = `Consultation request from ${name}`;
+      const body = [
+        `Name: ${name}`,
+        `Work email: ${email}`,
+        `Service: ${service}`,
+        "",
+        "Project or business challenge:",
+        message,
+      ].join("\n");
+
+      window.location.href = `mailto:contact@aaftaab.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    };
+
+    if (status) {
+      status.textContent = "Sending...";
+      status.classList.remove("error");
+    }
+
+    if (submitButton) submitButton.disabled = true;
+
+    try {
+      const response = await fetch(contactForm.action, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) throw new Error("Submission failed");
+
+      contactForm.reset();
+      if (status) status.textContent = "Thanks. Your request was sent.";
+    } catch (error) {
+      if (status) {
+        status.textContent = "Could not send directly. Opening your email app instead.";
+        status.classList.add("error");
+      }
+      fallbackEmail();
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+}
 window.addEventListener("hashchange", activateFromHash);
 activateFromHash();
